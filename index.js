@@ -1,10 +1,14 @@
 const express = require("express");
+var bodyParser = require("body-parser");
 
 //Database
 const database = require("./database");
 
 //Initialise express
 const booky = express();
+
+booky.use(bodyParser.urlencoded({extended: true}));
+booky.use(bodyParser.json()); //Here I want bodyParser to use JSON ONLY.
 
 /*
 Route               /
@@ -145,6 +149,50 @@ booky.get("/publications", (req, res) => {
     return res.json({publications: database.publication});
 });
 
+//POST
+
+// Add New Book
+/*
+Route               /book/new
+Description         Add new books
+Access              PUBLIC
+Parameter           NONE
+Methods             POST
+*/ 
+booky.post("/book/new", (req,res) => {
+    const newBook = req.body;   //this will fetch the body of our request (the new book we are trying to pass)
+    database.books.push(newBook); //this adds(pushes) a new book into our database
+    return res.json({updatedBooks: database.books}); //return the list of books in json format
+});
+
+// Add New Author
+/*
+Route               /author/new
+Description         Add new authors
+Access              PUBLIC
+Parameter           NONE
+Methods             POST
+*/ 
+booky.post("/author/new", (req, res) => {
+    const newAuthor = req.body;
+    database.author.push(newAuthor);
+    return res.json(database.author);
+})
+
+
+// Add New Publication
+/*
+Route               /publication/new
+Description         Add new publications
+Access              PUBLIC
+Parameter           NONE
+Methods             POST
+*/ 
+booky.post("/publication/new", (req, res) => {
+    const newPublication = req.body;
+    database.publication.push(newPublication);
+    return res.json(database.publication);
+})
 
 
 /*
