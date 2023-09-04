@@ -149,52 +149,6 @@ booky.get("/publications", (req, res) => {
     return res.json({publications: database.publication});
 });
 
-//POST
-
-// Add New Book
-/*
-Route               /book/new
-Description         Add new books
-Access              PUBLIC
-Parameter           NONE
-Methods             POST
-*/ 
-booky.post("/book/new", (req,res) => {
-    const newBook = req.body;   //this will fetch the body of our request (the new book we are trying to pass)
-    database.books.push(newBook); //this adds(pushes) a new book into our database
-    return res.json({updatedBooks: database.books}); //return the list of books in json format
-});
-
-// Add New Author
-/*
-Route               /author/new
-Description         Add new authors
-Access              PUBLIC
-Parameter           NONE
-Methods             POST
-*/ 
-booky.post("/author/new", (req, res) => {
-    const newAuthor = req.body;
-    database.author.push(newAuthor);
-    return res.json(database.author);
-})
-
-
-// Add New Publication
-/*
-Route               /publication/new
-Description         Add new publications
-Access              PUBLIC
-Parameter           NONE
-Methods             POST
-*/ 
-booky.post("/publication/new", (req, res) => {
-    const newPublication = req.body;
-    database.publication.push(newPublication);
-    return res.json(database.publication);
-})
-
-
 /*
 Route               /publications/id
 Description         Get all publications
@@ -241,6 +195,180 @@ booky.get("/publications/book/:isbn", (req, res) => {
 
     return res.json({ publications: getSpecificPublications });
 });
+
+
+
+//POST
+
+// Add New Book
+/*
+Route               /book/new
+Description         Add new books
+Access              PUBLIC
+Parameter           NONE
+Methods             POST
+*/ 
+booky.post("/book/new", (req,res) => {
+    const newBook = req.body;   //this will fetch the body of our request (the new book we are trying to pass)
+    database.books.push(newBook); //this adds(pushes) a new book into our database
+    return res.json({updatedBooks: database.books}); //return the list of books in json format
+});
+
+// Add New Author
+/*
+Route               /author/new
+Description         Add new authors
+Access              PUBLIC
+Parameter           NONE
+Methods             POST
+*/ 
+booky.post("/author/new", (req, res) => {
+    const newAuthor = req.body;
+    database.author.push(newAuthor);
+    return res.json(database.author);
+})
+
+
+// Add New Publication
+/*
+Route               /publication/new
+Description         Add new publications
+Access              PUBLIC
+Parameter           NONE
+Methods             POST
+*/ 
+booky.post("/publication/new", (req, res) => {
+    const newPublication = req.body;
+    database.publication.push(newPublication);
+    return res.json(database.publication);
+})
+
+//PUT
+/*
+Route               /publication/update/book
+Description         Update /add new publication
+Access              PUBLIC
+Parameter           isbn
+Methods             PUT
+*/ 
+
+booky.put("/publication/update/book/:isbn", (req, res) => {
+    //Update the publication database
+    database.publication.forEach((pub) => {
+        if(pub.id === req.body.pubId) {
+            return pub.books.push(req.params.isbn);
+        }
+    });
+
+    //Update the book database
+    database.books.forEach((book) => {
+        if(book.ISBN === req.params.isbn) {
+            book.publications = req.body.pubId;
+            return;
+        }
+    });
+
+    return res.json(
+        {
+            books: database.books,
+            publications: database.publication,
+            message: "Successfully updated publications"
+        }
+    );
+});
+
+/******DELETE******/
+/*
+Route               /book/delete
+Description         Delete a book
+Access              PUBLIC
+Parameter           isbn
+Methods             DELETE
+*/ 
+booky.delete("/book/delete/:isbn", (req, res) => {
+    //Whichever book that does not match with the ISNB, just send it to an updatedBookDatabase array
+    //and the rest will be filtered out
+
+    const updatedBookDatabase = database.books.filter(
+        (book) => book.ISBN !== req.params.isbn
+    )
+    database.books = updatedBookDatabase;
+
+    return res.json({books: database.books});
+});
+
+
+/*
+Route               /book/delete
+Description         Delete an author from a book
+Access              PUBLIC
+Parameter           isbn (ISBN of the book)
+                    authorId (ID of the author to be deleted)
+Methods             DELETE
+*/
+booky.delete("/book/delete/author/:isbn/:authorId", (req, res) => {
+    const isbn = req.params.isbn;
+    const authorId = parseInt(req.params.authorId);
+
+    // Find the book with the given ISBN
+    const book = database.books.find((book) => book.ISBN === isbn);
+
+    if (!book) {
+        return res.json({ error: `No book found for the ISBN of ${isbn}` });
+    }
+
+    // Check if the author exists in the book's author list
+    const authorIndex = book.author.indexOf(authorId);
+
+    if (authorIndex === -1) {
+        return res.json({ error: `Author with ID ${authorId} not found in the book` });
+    }
+
+    // Remove the author from the book's author list
+    book.author.splice(authorIndex, 1);
+
+    return res.json({ message: `Author with ID ${authorId} deleted from the book` });
+});
+
+
+/*
+Route               /book/delete/author
+Description         Delete an author from a book
+Access              PUBLIC
+Parameter           isbn, authorId
+Methods             DELETE
+*/ 
+ booky.delete("/book/delete/author/:isbn/:authorId", (req,res) => {
+    //Update the book database
+        database.books.forEach((book)=>{
+            if(book.ISBN === req.params.isbn) {
+                const newAuthorList = book.author.filter(
+                    (eachAuthor) => eachAuthor !== parseInt(req.params.authorId)
+                );
+                book.author = newAuthorList;
+                return;
+            }
+        })
+
+    //Update the author database
+        database.author.forEach((eachAuthor) => {
+            if(eachAuthor.id === parseInt(req.params.authorId)) {
+                const newBookList = eachAuthor.books.filter(
+                    (book)=> book !== req.params.isbn
+                );
+                eachAuthor.books = newBookList;
+                return;
+            }
+        });
+
+        return res.json({
+            book: database.books,
+            author: database.author,
+            message: "Author was deleted!!!"
+        })
+ });
+
+
 
 
 
