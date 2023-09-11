@@ -1,14 +1,29 @@
+require("dotenv").config();
+
+
 const express = require("express");
+const mongoose = require("mongoose");
 var bodyParser = require("body-parser");
 
 //Database
-const database = require("./database");
+const database = require("./database/database");
+
+//Models
+const BookModel = require("./database/book");
+const AuthorModel = require("./database/author");
+const PublicationModel = require("./database/publication");
 
 //Initialise express
 const booky = express();
 
 booky.use(bodyParser.urlencoded({extended: true}));
 booky.use(bodyParser.json()); //Here I want bodyParser to use JSON ONLY.
+mongoose.connect(process.env.MONGO_URL,
+{
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}
+).then(() => console.log("Connection Established"));
 
 /*
 Route               /
@@ -17,8 +32,9 @@ Access              PUBLIC
 Parameter           NONE
 Methods             GET
 */ 
-booky.get("/", (req, res) => {
-    return res.json({books: database.books});
+booky.get("/",async (req, res) => {
+    const getAllBooks = await BookModel.find();
+    return res.json(getAllBooks);
 });
 
 /*
@@ -28,12 +44,11 @@ Access              PUBLIC
 Parameter           isbn
 Methods             GET
 */ 
-booky.get("/is/:isbn", (req,res) => {
-    const getSpecificBook = database.books.filter(
-        (book) => book.ISBN === req.params.isbn
-        );
+booky.get("/is/:isbn", async (req,res) => {
+    const getSpecificBook = await BookModel.findOne({ISBN: req.params.isbn});
 
-        if(getSpecificBook.length === 0){
+        //null  !0= 1,  !1=0
+        if(!getSpecificBook){
             return res.json({error: `No book found for the ISBN of ${req.params.isbn}`})
         }
 
@@ -49,16 +64,15 @@ Parameter           category
 Methods             GET
 */ 
 
-booky.get("/c/:category", (req, res) => {
-    const getSpecificBook = database.books.filter(
-       (book) => book.category.includes(req.params.category)
-    )
+booky.get("/c/:category", async (req, res) => {
+    const getSpecificBook = await BookModel.findOne({category: req.params.category});
 
-    if(getSpecificBook.length === 0){
-        return res.json({error: `No book found for the category of ${req.params.category}`})
-    }
+        //null  !0= 1,  !1=0
+        if(!getSpecificBook){
+            return res.json({error: `No book found for the category of ${req.params.category}`})
+        }
 
-    return res.json({book: getSpecificBook});
+        return res.json({book: getSpecificBook});
 });
 
 
@@ -208,10 +222,13 @@ Access              PUBLIC
 Parameter           NONE
 Methods             POST
 */ 
-booky.post("/book/new", (req,res) => {
-    const newBook = req.body;   //this will fetch the body of our request (the new book we are trying to pass)
-    database.books.push(newBook); //this adds(pushes) a new book into our database
-    return res.json({updatedBooks: database.books}); //return the list of books in json format
+booky.post("/book/new", async(req,res) => {
+    const {newBook} = req.body;   //this will fetch the body of our request (the new book we are trying to pass)
+    const addNewBook = BookModel.create(newBook);
+    return res.json({
+        books: addNewBook,
+        message: "Book was added"
+    });
 });
 
 // Add New Author
@@ -222,11 +239,16 @@ Access              PUBLIC
 Parameter           NONE
 Methods             POST
 */ 
-booky.post("/author/new", (req, res) => {
-    const newAuthor = req.body;
-    database.author.push(newAuthor);
-    return res.json(database.author);
-})
+booky.post("/author/new", async (req, res) => {
+    const { newAuthor } = req.body;
+    const addNewAuthor = AuthorModel.create(newAuthor);
+    return res.json(
+        {
+            author: addNewAuthor,
+            message: "Author was added"
+        }
+    );
+});
 
 
 // Add New Publication
@@ -237,11 +259,17 @@ Access              PUBLIC
 Parameter           NONE
 Methods             POST
 */ 
-booky.post("/publication/new", (req, res) => {
-    const newPublication = req.body;
-    database.publication.push(newPublication);
-    return res.json(database.publication);
-})
+booky.post("/publication/new", async (req, res) => {
+    const {newPublication} = req.body;
+    const addNewPublication = PublicationModel.create(newPublication);
+    return res.json(
+        {
+            publication: addNewPublication,
+            message: "Publication was added"
+        }
+    );
+    
+});
 
 //PUT
 /*
